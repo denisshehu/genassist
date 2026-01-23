@@ -8,7 +8,7 @@ from app.core.project_path import DATA_VOLUME
 class ProjectSettings(BaseSettings):
     
     # === Redis Configuration ===
-    REDIS_HOST: Optional[str] = redis
+    REDIS_HOST: Optional[str] = "redis"
     REDIS_PORT: int = 6379
     REDIS_DB: int = 0
     REDIS_FOR_CONVERSATION: bool = True
