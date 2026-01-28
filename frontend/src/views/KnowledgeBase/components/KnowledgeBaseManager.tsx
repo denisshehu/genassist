@@ -485,7 +485,7 @@ const KnowledgeBaseManager: React.FC = () => {
       //////////////////////////
 
       if (formData.type === "file" && selectedFiles.length > 0) {
-        const uploadResults = await uploadFiles();
+        const uploadResults = (await uploadFiles()) as Array<[]>;
 
         if (!uploadResults || uploadResults.length === 0) {
           throw new Error("File upload failed");
