@@ -355,7 +355,7 @@ async def set_url_content_if_no_rag(item: KBBase):
                 all_content.append(html)
             else:
                 all_content.append(html2text(html))
-        item.content = "\n\n".join(all_content)
+        item.content = "\n\n---\n\n".join(all_content)
 
 
 async def set_url_content_if_has_rag(item: KBBase):
@@ -378,7 +378,7 @@ async def set_url_content_if_has_rag(item: KBBase):
                 all_content.append(html)
             else:
                 all_content.append(html2text(html))
-        item.content = "\n\n".join(all_content)
+        item.content = "\n\n---\n\n".join(all_content)
 
 
 def extract_sub_messages(transcript: str, num_messages_to_extract: int = 2) -> str:
