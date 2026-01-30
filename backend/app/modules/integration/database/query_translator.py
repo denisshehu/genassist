@@ -13,7 +13,6 @@ from .query_validator import validate_with_sqlglot
 logger = logging.getLogger(__name__)
 
 
-
 # ==============================================================
 #  MAIN FUNCTION
 # ==============================================================
@@ -76,7 +75,8 @@ async def translate_to_query(
 
     # Validate SQL
     db_type = db_manager.get_db_type()
-    validation = validate_with_sqlglot(query_info["formatted_query"], schema, db_type)
+    validation = validate_with_sqlglot(
+        query_info["formatted_query"], schema, db_type)
     if not validation.is_valid:
         logger.error(f"SQL validation failed: {validation.error_message}")
         logger.error(f"Generated query: {query_info['formatted_query']}")
@@ -94,15 +94,16 @@ async def translate_to_query(
 #  PROMPT CONSTRUCTION
 # ==============================================================
 
+
 def _build_prompt(schema: Dict[str, Any], system_prompt: Optional[str] = None) -> str:
     """
     Build a schema-strict prompt with table-selection rule.
     """
     schema_text = _summarize_schema(schema)
-    
+
     # Always include base prompt, and add custom prompt if provided
     combined_prompt = _get_combined_prompt(system_prompt)
-    
+
     return f"""{combined_prompt}
 
 DATABASE SCHEMA:
@@ -126,9 +127,10 @@ Output ONLY JSON in this exact format:
 
 def _summarize_schema(schema: Dict[str, Any]) -> str:
     """
-    Render structured schema summary with examples for all columns.
+    Render a compact schema summary with just column names and types.
     """
     sections = []
+
     for table in schema.get("tables", []):
         table_name = table["name"]
         col_lines = []
@@ -136,36 +138,12 @@ def _summarize_schema(schema: Dict[str, Any]) -> str:
         for col in table.get("columns", []):
             col_name = col["name"]
             data_type = col.get("type", "")
-            example_values = ""
+            col_lines.append(f"  - {col_name} ({data_type})")
 
-            # Get unique values count and examples (support both keys)
-            examples = col.get("possible_values", []) or col.get("categorical_values", [])
-            total_distinct = col.get("total_distinct_count", 0)
-            
-            if examples:
-                clean_examples = [str(v) for v in examples if v is not None]
-                
-                # Determine if categorical based on unique values count
-                if total_distinct > 0 and total_distinct <= 20:
-                    # Categorical column - show all unique values
-                    example_values = f" ({total_distinct} unique values - categorical: {', '.join(clean_examples)})"
-                elif total_distinct > 20:
-                    # Non-categorical column with many unique values
-                    example_values = f" ({total_distinct} unique values - examples: {', '.join(clean_examples[:4])})"
-                else:
-                    # Fallback when total_distinct is not available
-                    example_values = f" (examples: {', '.join(clean_examples[:4])})"
-
-            default = col.get("default")
-            if default:
-                example_values += f" [default: {default}]"
-
-            col_lines.append(f"  - {col_name} ({data_type}){example_values}\n")
-
-        table_block = f"TABLE: {table_name}\n" + "".join(col_lines)
+        table_block = f"TABLE: {table_name}\n" + "\n".join(col_lines)
         sections.append(table_block)
 
-    return "\n".join(sections)
+    return "\n\n".join(sections)
 
 
 # ==============================================================
@@ -216,7 +194,8 @@ def _restore_exact_values(query: str, schema: Dict[str, Any]) -> str:
     try:
         for table in schema.get("tables", []):
             for col in table.get("columns", []):
-                examples = col.get("possible_values", []) or col.get("categorical_values", [])
+                examples = col.get("possible_values", []) or col.get(
+                    "categorical_values", [])
                 if not examples:
                     continue
 
@@ -229,7 +208,8 @@ def _restore_exact_values(query: str, schema: Dict[str, Any]) -> str:
                         base = val.split("(")[0].strip()
                         pattern = rf"{col['name']}\s*=\s*['\"]{re.escape(base)}['\"]"
                         replacement = f"{col['name']} = '{val}'"
-                        query = re.sub(pattern, replacement, query, flags=re.IGNORECASE)
+                        query = re.sub(pattern, replacement,
+                                       query, flags=re.IGNORECASE)
         return query
     except Exception as e:
         logger.debug(f"Value restoration skipped: {e}")
