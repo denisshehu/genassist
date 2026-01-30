@@ -341,7 +341,7 @@ def validate_with_sqlglot(query: str, schema: Dict, db_type="mysql") -> Validati
                 "mysql": "mysql",
                 "postgresql": "postgres",
                 "sqlite": "sqlite",
-                "mssql": "mssql",
+                "mssql": "tsql",
                 "snowflake": "snowflake"}
             parsed = parse_one(
                 query, dialect=dialect_mapping.get(db_type, "mysql"))

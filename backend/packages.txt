@@ -24,3 +24,4 @@ tesseract-ocr
 tesseract-ocr-eng
 libmagic1
 antiword
+freetds-dev

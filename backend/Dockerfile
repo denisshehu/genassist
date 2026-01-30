@@ -60,6 +60,10 @@ RUN apt-get update && \
     libxml2 \
     && rm -rf /var/lib/apt/lists/*
 
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends freetds-bin freetds-common \
+    && rm -rf /var/lib/apt/lists/*
+
 # 2. Configure Environment & User
 ENV PATH="/opt/venv/bin:$PATH" \
     PYTHONDONTWRITEBYTECODE=1 \
