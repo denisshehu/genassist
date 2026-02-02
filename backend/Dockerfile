@@ -60,6 +60,22 @@ RUN apt-get update && \
     libxml2 \
     && rm -rf /var/lib/apt/lists/*
 
+# 1. Install dependencies
+RUN apt-get update && apt-get install -y \
+    unixodbc \
+    unixodbc-dev \
+    freetds-dev \
+    freetds-bin \
+    tdsodbc \
+    && rm -rf /var/lib/apt/lists/*
+
+# 2. Dynamically find and configure the driver
+RUN DRIVER_PATH=$(find /usr/lib -name libtdsodbc.so | head -n 1) && \
+    echo "[FreeTDS]\n\
+    Description = FreeTDS Driver\n\
+    Driver = $DRIVER_PATH\n\
+    UsageCount = 1" > /etc/odbcinst.ini
+
 # 2. Configure Environment & User
 ENV PATH="/opt/venv/bin:$PATH" \
     PYTHONDONTWRITEBYTECODE=1 \
