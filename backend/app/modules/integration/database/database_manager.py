@@ -189,13 +189,10 @@ class DatabaseManager:
                     else ""
                 )
 
-                tds_version = "7.4"
-
                 connection_string = (
                     f"mssql+aioodbc://{self.config.get('database_user')}:"
-                    f"{decrypt_key(self.config.get('database_password'))}@{host}:{port}/"
-                    f"{self.config.get('database_name')}?"
-                    f"driver=FreeTDS&tds_version={tds_version}{trust_cert}"
+                    f"{decrypt_key(self.config.get('database_password'))}@{host}:"
+                    f"{port}/{self.config.get('database_name')}?driver=FreeTDS{trust_cert}"
                 )
 
                 logger.info(
