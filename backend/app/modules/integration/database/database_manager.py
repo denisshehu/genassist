@@ -182,17 +182,14 @@ class DatabaseManager:
                 )
 
                 # MSSQL connection string with ODBC driver
-
-                trust_cert = (
-                    "&TrustServerCertificate=yes"
-                    if host in ("localhost", "127.0.0.1")
-                    else ""
-                )
+                # ODBC Driver 18 requires explicit SSL settings
+                driver = "ODBC+Driver+18+for+SQL+Server"
 
                 connection_string = (
                     f"mssql+aioodbc://{self.config.get('database_user')}:"
-                    f"{decrypt_key(self.config.get('database_password'))}@{host}:"
-                    f"{port}/{self.config.get('database_name')}?driver=FreeTDS{trust_cert}"
+                    f"{decrypt_key(self.config.get('database_password'))}@{host}:{port}/"
+                    f"{self.config.get('database_name')}?"
+                    f"driver={driver}&Encrypt=yes&TrustServerCertificate=yes"
                 )
 
                 logger.info(
