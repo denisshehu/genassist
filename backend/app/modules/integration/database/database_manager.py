@@ -183,7 +183,7 @@ class DatabaseManager:
 
                 # MSSQL connection string with ODBC driver
                 # ODBC Driver 18 requires explicit SSL settings
-                driver = "ODBC+Driver+18+for+SQL+Server"
+                driver = os.getenv("MSSQL_DRIVER", "ODBC+Driver+18+for+SQL+Server")
 
                 connection_string = (
                     f"mssql+aioodbc://{self.config.get('database_user')}:"
@@ -192,9 +192,7 @@ class DatabaseManager:
                     f"driver={driver}&Encrypt=yes&TrustServerCertificate=yes"
                 )
 
-                logger.info(
-                    f"Connecting to MSSQL with connection string: {connection_string}"
-                )
+                logger.info("Connecting to MSSQL...")
 
                 self.engine = create_async_engine(
                     connection_string,
