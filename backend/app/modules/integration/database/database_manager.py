@@ -9,6 +9,7 @@ from sqlalchemy import text
 from sqlalchemy.pool import NullPool
 import asyncio
 from app.modules.integration.snowflake import SnowflakeManager
+from app.core.config.settings import settings
 
 logger = logging.getLogger(__name__)
 
@@ -168,7 +169,6 @@ class DatabaseManager:
                 logger.info("Connected to MySQL database")
             elif self.db_type == "mssql":
                 # Use aioodbc for MSSQL connections
-
                 port = (
                     self.tunnel.local_bind_port
                     if (hasattr(self, "tunnel") and self.tunnel)
@@ -183,7 +183,7 @@ class DatabaseManager:
 
                 # MSSQL connection string with ODBC driver
                 # ODBC Driver 18 requires explicit SSL settings
-                driver = os.getenv("MSSQL_DRIVER", "ODBC+Driver+18+for+SQL+Server")
+                driver = settings.MSSQL_DRIVER
 
                 connection_string = (
                     f"mssql+aioodbc://{self.config.get('database_user')}:"
