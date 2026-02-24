@@ -47,7 +47,7 @@ class VerifyTokenResponse(BaseModel):
 )
 async def verify_ws_token(
     body: VerifyTokenRequest,
-    _secret: None = Header(None, alias="x-internal-secret", include_in_schema=False),
+    _secret: str = Header(..., alias="x-internal-secret", include_in_schema=False),
     auth_service: AuthService = Injected(AuthService),
 ):
     """

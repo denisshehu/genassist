@@ -16,7 +16,7 @@ class Settings(BaseSettings):
 
     # Backend
     BACKEND_URL: str = "http://localhost:8000"
-    WS_INTERNAL_SECRET: str = "change-me-in-production"
+    WS_INTERNAL_SECRET: str = "websocket-internal-secret"
 
     # WebSocket service
     HOST: str = "0.0.0.0"

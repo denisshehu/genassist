@@ -203,7 +203,6 @@ services:
   # WebSocket service (standalone relay)
   # Builds from ./websocket when image is not available (e.g. local dev or first run)
   websocket:
-    # pull_policy: never
     build:
       context: ./websocket
       dockerfile: Dockerfile

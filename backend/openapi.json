@@ -13942,6 +13942,47 @@
           }
         }
       }
+    },
+    "/api/internal/agents/execute": {
+      "post": {
+        "tags": [
+          "v1",
+          "Internal"
+        ],
+        "summary": "Execute agent with text input (internal use only)",
+        "description": "Internal endpoint called by the websocket for Twilio media-stream.\nPasses transcribed text to the agent and returns the response.",
+        "operationId": "execute_agent_api_internal_agents_execute_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentExecuteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -14207,6 +14248,29 @@
           "possible_queries"
         ],
         "title": "AgentCreate"
+      },
+      "AgentExecuteRequest": {
+        "properties": {
+          "agent_id": {
+            "type": "string",
+            "title": "Agent Id"
+          },
+          "thread_id": {
+            "type": "string",
+            "title": "Thread Id"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          }
+        },
+        "type": "object",
+        "required": [
+          "agent_id",
+          "thread_id",
+          "text"
+        ],
+        "title": "AgentExecuteRequest"
       },
       "AgentListItem": {
         "properties": {
@@ -15751,6 +15815,7 @@
           },
           "password": {
             "type": "string",
+            "format": "password",
             "title": "Password"
           },
           "scope": {
@@ -15778,6 +15843,7 @@
                 "type": "null"
               }
             ],
+            "format": "password",
             "title": "Client Secret"
           }
         },
