@@ -89,6 +89,8 @@ stages:
                     composeOverride: 'docker-compose.build.yml'
                     envFile: 'env.backend.dev'
                     envDest: 'backend/.env'
+                    webSocketEnvFile: 'env.websocket.dev'
+                    webSocketEnvDest: 'websocket/.env'
                     extraEnv: >-
                       API_VERSION=$(Build.BuildNumber)
                       LOG_LEVEL=INFO
@@ -142,6 +144,8 @@ stages:
                     services: '$(infraPart) app $(celeryPart) $(whisperPart) $(flowerPart) $(websocketPart)'
                     envFile: 'env.backend.test'
                     envDest: 'backend/.env'
+                    webSocketEnvFile: 'env.websocket.test'
+                    webSocketEnvDest: 'websocket/.env'
                     extraEnv: >-
                       API_VERSION=$(Build.SourceBranchName)-$(Build.BuildNumber)
                       LOG_LEVEL=INFO
