@@ -55,9 +55,10 @@ steps:
 
       # Ensure both env files exist so compose can parse the full file
       # (needed when deploying frontend-only without backend/.env present)
-      mkdir -p backend frontend
+      mkdir -p backend frontend websocket
       [ -f backend/.env ] || touch backend/.env
       [ -f frontend/.env ] || touch frontend/.env
+      [ -f websocket/.env ] || touch websocket/.env
 
       echo "=== Cleaning up orphaned containers ==="
       CLEANUP_TARGETS="${{ parameters.services }} ${{ parameters.cleanupExtra }}"
