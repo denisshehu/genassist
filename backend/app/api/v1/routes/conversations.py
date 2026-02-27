@@ -643,27 +643,5 @@ async def get_agent_response_log_by_message(
         "logged_at": log_entry.logged_at.isoformat() if log_entry.logged_at else None,
     }
 
-# TODO: Remove this once the websocket endpoints are moved to the standalone websocket service.
-# @router.websocket("/ws/{conversation_id}")
-# async def websocket_endpoint(
-#     websocket: WebSocket,
-#     conversation_id: UUID,
-#     principal: SocketPrincipal = socket_auth(["read:in_progress_conversation"]),
-#     lang: Optional[str] = Query(default="en"),
-#     topics: list[str] = Query(default=["message"]),
-#     socket_connection_manager: SocketConnectionManager = Injected(
-#         SocketConnectionManager
-#     ),
-# ):
-#     tenant_id = principal.tenant_id
-#     await socket_connection_manager.connect(
-#         websocket=websocket,
-#         room_id=conversation_id,
-#         user_id=principal.user_id,
-#         permissions=principal.permissions,
-#         tenant_id=tenant_id,
-#         topics=topics,
-#     )
-
 # WebSocket endpoints have been moved to the standalone websocket service.
 # The backend now only publishes to Redis via SocketConnectionManager.broadcast().
