@@ -132,7 +132,9 @@ export const getApiUrl = async (): Promise<string> => {
 };
 
 export const getWebsocketUrl = async (): Promise<string> => {
-  return ensureTrailingSlash(WEBSOCKET_URL);
+  // remove slash from the end of the url
+  const url = String(WEBSOCKET_URL).trim();
+  return url.endsWith("/") ? url.slice(0, -1) : url;
 };
 
 export const getGenassistChatApiKey = async (): Promise<string> => {

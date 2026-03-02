@@ -41,11 +41,6 @@ export const GlobalChat = () => {
         setError(message);
       }
 
-
-      console.log("baseUrl", baseUrl);
-      console.log("websocketUrl", websocketUrl);
-      console.log("genassistApiKey", genassistApiKey);
-
     })();
   }, [baseUrl, websocketUrl, genassistApiKey]);
 
