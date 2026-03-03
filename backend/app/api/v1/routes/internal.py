@@ -3,42 +3,27 @@ from typing import Optional
 from uuid import UUID
 
 import jwt
-from fastapi import APIRouter, Header, HTTPException
+from fastapi import APIRouter, Header
 from fastapi_injector import Injected
-from pydantic import BaseModel
 
-from app.core.config.settings import settings
 from app.core.tenant_scope import set_tenant_context
 from app.services.auth import AuthService
 from app.services.agent_config import AgentConfigService
 from app.modules.workflow.registry import RegistryItem
 
+# Dependencies
+from app.auth.dependencies import verify_internal_secret
+
+from app.core.exceptions.error_messages import ErrorKey
+from app.core.exceptions.exception_classes import AppException
+
+# Shared schemas
+from backend_shared.schemas.internal import AgentExecuteRequest
+from backend_shared.schemas.auth import VerifyTokenRequest, VerifyTokenResponse
+
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
-
-
-def _verify_internal_secret(x_internal_secret: str = Header(...)):
-    """Validate the shared secret header for internal service-to-service calls."""
-    if not settings.WS_INTERNAL_SECRET:
-        raise HTTPException(status_code=503, detail="WS_INTERNAL_SECRET not configured")
-    if x_internal_secret != settings.WS_INTERNAL_SECRET:
-        raise HTTPException(status_code=403, detail="Invalid internal secret")
-
-
-class VerifyTokenRequest(BaseModel):
-    access_token: Optional[str] = None
-    api_key: Optional[str] = None
-    required_permissions: list[str] = []
-    tenant_id: str = "master"
-
-
-class VerifyTokenResponse(BaseModel):
-    user_id: str
-    permissions: list[str]
-    tenant_id: str
-    token_exp: Optional[int] = None
-
 
 @router.post(
     "/ws/verify-token",
@@ -55,7 +40,7 @@ async def verify_ws_token(
     on initial WebSocket connection. Returns user info and permissions.
     """
     # Verify internal secret
-    _verify_internal_secret(_secret)
+    verify_internal_secret(_secret)
 
     # Set tenant context for the lookup
     set_tenant_context(body.tenant_id)
@@ -85,12 +70,12 @@ async def verify_ws_token(
         user_id = key_obj.user.id
         perms = key_obj.permissions
     else:
-        raise HTTPException(status_code=400, detail="Either access_token or api_key is required")
+        raise AppException(status_code=400, error_key=ErrorKey.MISSING_PARAMETER, error_detail="Either access_token or api_key is required")
 
     # Check required permissions
     if body.required_permissions:
         if not set(body.required_permissions).issubset(set(perms)):
-            raise HTTPException(status_code=403, detail="Insufficient permissions")
+            raise AppException(status_code=403, error_key=ErrorKey.INSUFFICIENT_PERMISSIONS, error_detail="Insufficient permissions")
 
     return VerifyTokenResponse(
         user_id=str(user_id),
@@ -113,23 +98,17 @@ async def get_agent_config(
     Internal endpoint called by the websocket to fetch agent configuration
     for media-stream/Twilio endpoints.
     """
-    _verify_internal_secret(_secret)
+    verify_internal_secret(_secret)
 
     agent = await agent_service.get_by_id(agent_id)
     if not agent:
-        raise HTTPException(status_code=404, detail="Agent not found")
+        raise AppException(status_code=404, error_key=ErrorKey.AGENT_NOT_FOUND, error_detail="Agent not found")
 
     return {
         "id": str(agent.id),
         "name": agent.name,
         "config": agent.config if hasattr(agent, "config") else None,
     }
-
-
-class AgentExecuteRequest(BaseModel):
-    agent_id: str
-    thread_id: str
-    text: str
 
 
 @router.post(
@@ -145,7 +124,7 @@ async def execute_agent(
     Internal endpoint called by the websocket for Twilio media-stream.
     Passes transcribed text to the agent and returns the response.
     """
-    _verify_internal_secret(_secret)
+    verify_internal_secret(_secret)
 
     try:
         agent = await agent_service.get_by_id_full(UUID(body.agent_id))

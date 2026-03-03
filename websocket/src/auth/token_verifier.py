@@ -6,8 +6,9 @@ from collections import OrderedDict
 
 import httpx
 
-from auth.models import AuthenticatedUser, VerifyTokenRequest
 from config import settings
+# Shared schemas
+from backend_shared.schemas.auth import VerifyTokenRequest, AuthenticatedUser
 
 logger = logging.getLogger(__name__)
 
@@ -64,15 +65,12 @@ class TokenVerifier:
                 required_permissions=required_permissions,
                 tenant_id=tenant_id,
             )
-            print(payload)
-            print(settings.BACKEND_URL)
 
             resp = await self._client.post(
                 f"{settings.BACKEND_URL}/api/internal/ws/verify-token",
                 json=payload.model_dump(mode="json"),
                 headers={"x-internal-secret": settings.WS_INTERNAL_SECRET},
             )
-            print(resp.json())
         except httpx.RequestError as exc:
             logger.error(f"Backend unreachable for token verification: {exc}")
             raise AuthenticationError(503, "Backend unavailable")

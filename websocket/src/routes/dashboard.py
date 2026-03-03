@@ -30,7 +30,7 @@ async def ws_dashboard(
     try:
         user = await verifier.verify(
             access_token, api_key,
-            ["read:in_progress_conversation"], tenant_id,
+            ["read:conversation"], tenant_id,
         )
     except AuthenticationError as exc:
         await websocket.close(code=4401, reason=exc.detail)
