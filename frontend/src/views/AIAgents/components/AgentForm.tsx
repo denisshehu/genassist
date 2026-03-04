@@ -633,7 +633,13 @@ const AgentForm: React.FC<AgentFormProps> = ({
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="welcome_message">Welcome Message</Label>
+                <div className="flex items-center justify-between gap-2">
+                  <Label htmlFor="welcome_message">Welcome Message</Label>
+                  <TranslationTrigger
+                    translationKey={`agent.${id}.welcome_message`}
+                    currentValue={formData.welcome_message || ""}
+                  />
+                </div>
                 <Textarea
                   id="welcome_message"
                   name="welcome_message"

@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 from fastapi_cache.coder import PickleCoder
 from fastapi_cache.decorator import cache
@@ -52,6 +52,44 @@ class TranslationsService:
             if r.key == key:
                 return r
         raise AppException(status_code=404, error_key=ErrorKey.NOT_FOUND)
+
+    async def get_by_key_lang(
+        self,
+        key: str,
+        accept_language: Optional[str],
+        default: Optional[str] = None,
+    ) -> Optional[str]:
+        """
+        Resolve a translation value for a given key and `Accept-Language` header.
+
+        - Parses the header to extract the primary language (e.g. "en-US,en;q=0.9" -> "en").
+        - Tries the language-specific field on the translation model.
+        - Falls back to the translation's `default` field.
+        - If the record is not found, or no value is available, returns the `default` argument.
+        """
+        # Derive language code from Accept-Language (if provided)
+        lang_code: Optional[str] = None
+        if accept_language:
+            primary_token = accept_language.split(",")[0].strip()
+            if primary_token:
+                lang_code = primary_token.split("-")[0].lower()
+
+        try:
+            translation = await self.get_by_key(key)
+        except AppException as exc:
+            if exc.status_code == 404:
+                return default
+            raise
+
+        if lang_code:
+            value = getattr(translation, lang_code, None)
+            if value:
+                return value
+
+        if translation.default:
+            return translation.default
+
+        return default
 
     async def update(self, key: str, dto: TranslationUpdate) -> TranslationRead:
         existing = await self.repository.get_by_key(key)
