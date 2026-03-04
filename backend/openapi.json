@@ -15235,7 +15235,6 @@
             ]
           }
         },
-        "additionalProperties": false,
         "type": "object",
         "title": "AgentUpdate"
       },
