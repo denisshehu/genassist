@@ -13,12 +13,14 @@ interface TranslationsCardProps {
   searchQuery: string;
   refreshKey?: number;
   onEditTranslation: (translation: Translation | null, mode: "create" | "edit") => void;
+  onRefresh: () => void;
 }
 
 export function TranslationsCard({
   searchQuery,
   refreshKey = 0,
   onEditTranslation,
+  onRefresh,
 }: TranslationsCardProps) {
   const [translations, setTranslations] = useState<Translation[]>([]);
   const [loading, setLoading] = useState(true);
@@ -175,9 +177,9 @@ export function TranslationsCard({
           variant="outline"
           size="sm"
           className="flex items-center gap-1"
-          onClick={() => onEditTranslation(null, "create")}
+          onClick={onRefresh}
         >
-          Add Translation
+          Refresh
         </Button>
       </div>
 
@@ -203,4 +205,3 @@ export function TranslationsCard({
     </>
   );
 }
-

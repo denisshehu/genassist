@@ -40,14 +40,15 @@ export function Translations() {
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
         searchPlaceholder="Search translations..."
-        actionButtonText="Refresh"
-        onActionClick={handleRefresh}
+        actionButtonText="Add Translation"
+        onActionClick={handleOpenCreate}
       />
 
       <TranslationsCard
         searchQuery={searchQuery}
         refreshKey={refreshKey}
         onEditTranslation={handleOpenEdit}
+        onRefresh={handleRefresh}
       />
 
       <TranslationDialog
@@ -60,4 +61,3 @@ export function Translations() {
     </PageLayout>
   );
 }
-

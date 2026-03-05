@@ -68,6 +68,9 @@ class TranslationsService:
         - If the record is not found, or no value is available, returns the `default` argument.
         """
         # Derive language code from Accept-Language (if provided)
+        if default is None or default == "":
+            return None  # if caller doesn't provide a default, return None for missing translations instead of empty string
+            
         lang_code: Optional[str] = None
         if accept_language:
             primary_token = accept_language.split(",")[0].strip()

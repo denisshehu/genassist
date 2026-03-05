@@ -211,7 +211,7 @@ export function TranslationDialog({
                 value={key}
                 onChange={(e) => setKey(e.target.value)}
                 placeholder="translation.key"
-                disabled={dialogMode === "edit"}
+                disabled={dialogMode === "edit" || !!initialKey}
                 autoFocus
               />
             </div>

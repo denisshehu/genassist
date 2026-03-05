@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import {
@@ -33,7 +33,8 @@ import {
 } from "@/components/sheet";
 import { Textarea } from "@/components/textarea";
 import { TranslationDialog } from "@/views/Settings/components/TranslationDialog";
-import { Translation } from "@/interfaces/translation.interface";
+import { getTranslationByKey } from "@/services/translations";
+import { getTranslationCount } from "../utils";
 
 interface AgentFormData {
   id?: string;
@@ -76,6 +77,30 @@ const TranslationTrigger: React.FC<TranslationTriggerProps> = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [refreshCounter, setRefreshCounter] = useState(0);
+  const [translationCount, setTranslationCount] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadTranslationCount = async () => {
+      if (!translationKey) {
+        setTranslationCount(0);
+        return;
+      }
+
+      const translation = await getTranslationByKey(translationKey);
+      if (cancelled) return;
+
+      const count = getTranslationCount(translation);
+      setTranslationCount(count);
+    };
+
+    void loadTranslationCount();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [translationKey, refreshCounter]);
 
   const handleOpen = () => {
     setIsOpen(true);
@@ -86,15 +111,30 @@ const TranslationTrigger: React.FC<TranslationTriggerProps> = ({
     setRefreshCounter((prev) => prev + 1);
   };
 
+  const hasTranslations = translationCount > 0;
+
   return (
     <>
       <button
         type="button"
         onClick={handleOpen}
-        className="inline-flex items-center justify-center h-6 w-6 rounded-full border border-dashed border-muted-foreground/40 text-muted-foreground hover:text-primary hover:border-primary transition-colors"
-        title="Manage translations"
+        className={`inline-flex items-center gap-1.5 h-6 rounded-full border border-dashed px-2 transition-colors ${
+          hasTranslations
+            ? "border-primary text-primary"
+            : "border-muted-foreground/40 text-muted-foreground hover:text-primary hover:border-primary"
+        }`}
+        title={
+          hasTranslations
+            ? `Manage translations (${translationCount})`
+            : "Manage translations"
+        }
       >
         <Languages className="h-3.5 w-3.5" />
+        {hasTranslations && (
+          <span className="text-sm font-medium leading-none">
+            {translationCount}
+          </span>
+        )}
       </button>
       {/* Keyed by translationKey and refreshCounter so dialog re-initializes when needed */}
       <TranslationDialog
@@ -625,10 +665,12 @@ const AgentForm: React.FC<AgentFormProps> = ({
               <div className="space-y-2">
                 <div className="flex items-center justify-between gap-2">
                   <Label htmlFor="welcome_title">Welcome Title</Label>
-                  <TranslationTrigger
-                    translationKey={`agent.${id}.welcome_title`}
-                    currentValue={formData.welcome_title || ""}
-                  />
+                  {isEditMode && id && (
+                    <TranslationTrigger
+                      translationKey={`agent.${id}.welcome_title`}
+                      currentValue={formData.welcome_title || ""}
+                    />
+                  )}
                 </div>
                 <Input
                   id="welcome_title"
@@ -641,10 +683,12 @@ const AgentForm: React.FC<AgentFormProps> = ({
               <div className="space-y-2">
                 <div className="flex items-center justify-between gap-2">
                   <Label htmlFor="welcome_message">Welcome Message</Label>
-                  <TranslationTrigger
-                    translationKey={`agent.${id}.welcome_message`}
-                    currentValue={formData.welcome_message || ""}
-                  />
+                  {isEditMode && id && (
+                    <TranslationTrigger
+                      translationKey={`agent.${id}.welcome_message`}
+                      currentValue={formData.welcome_message || ""}
+                    />
+                  )}
                 </div>
                 <Textarea
                   id="welcome_message"
