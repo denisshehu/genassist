@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -10,7 +10,14 @@ import { Button } from "@/components/button";
 import { Input } from "@/components/input";
 import { Label } from "@/components/label";
 import { Textarea } from "@/components/textarea";
-import { Loader2 } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/select";
+import { Loader2, Plus, Trash2 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import {
   createTranslation,
@@ -20,15 +27,36 @@ import {
 } from "@/services/translations";
 import { Language, Translation } from "@/interfaces/translation.interface";
 
+interface TranslationRow {
+  langCode: string;
+  value: string;
+}
+
+function translationsToRows(
+  translations: Record<string, string>
+): TranslationRow[] {
+  return Object.entries(translations).map(([langCode, value]) => ({
+    langCode,
+    value,
+  }));
+}
+
+function findDefaultLangCode(
+  defaultValue: string | null | undefined,
+  rows: TranslationRow[]
+): string | null {
+  if (!defaultValue) return null;
+  const match = rows.find((r) => r.value === defaultValue);
+  return match?.langCode ?? null;
+}
+
 interface TranslationDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   onTranslationSaved: () => void;
   translationToEdit?: Translation | null;
   mode?: "create" | "edit";
-  /** Optional initial key to load or prefill (used for inline field translations) */
   initialKey?: string;
-  /** Optional initial default value when creating a new translation for a field */
   initialDefaultValue?: string;
 }
 
@@ -43,19 +71,17 @@ export function TranslationDialog({
 }: TranslationDialogProps) {
   const [dialogMode, setDialogMode] = useState<"create" | "edit">(mode);
   const [key, setKey] = useState("");
-  const [defaultValue, setDefaultValue] = useState("");
-  const [translations, setTranslations] = useState<Record<string, string>>({});
+  const [defaultLangCode, setDefaultLangCode] = useState<string | null>(null);
+  const [rows, setRows] = useState<TranslationRow[]>([]);
   const [languages, setLanguages] = useState<Language[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    getLanguages().then(setLanguages).catch(() => {});
+    getLanguages()
+      .then(setLanguages)
+      .catch(() => toast.error("Failed to load languages."));
   }, []);
-
-  useEffect(() => {
-    setDialogMode(mode);
-  }, [mode]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -67,8 +93,11 @@ export function TranslationDialog({
       if (translationToEdit && mode === "edit") {
         setDialogMode("edit");
         setKey(translationToEdit.key || "");
-        setDefaultValue(translationToEdit.default || "");
-        setTranslations({ ...translationToEdit.translations });
+        const builtRows = translationsToRows(translationToEdit.translations);
+        setRows(builtRows);
+        setDefaultLangCode(
+          findDefaultLangCode(translationToEdit.default, builtRows)
+        );
         return;
       }
 
@@ -79,13 +108,21 @@ export function TranslationDialog({
         if (existing) {
           setDialogMode("edit");
           setKey(existing.key || "");
-          setDefaultValue(existing.default || "");
-          setTranslations({ ...existing.translations });
+          const builtRows = translationsToRows(existing.translations);
+          setRows(builtRows);
+          setDefaultLangCode(
+            findDefaultLangCode(existing.default, builtRows)
+          );
         } else {
           setDialogMode("create");
           setKey(initialKey);
-          setDefaultValue(initialDefaultValue || "");
-          setTranslations({});
+          const firstLang = languages[0]?.code ?? "en";
+          setRows(
+            initialDefaultValue
+              ? [{ langCode: firstLang, value: initialDefaultValue }]
+              : []
+          );
+          setDefaultLangCode(initialDefaultValue ? firstLang : null);
         }
         return;
       }
@@ -99,22 +136,77 @@ export function TranslationDialog({
     return () => {
       cancelled = true;
     };
-  }, [isOpen, translationToEdit, mode, initialKey, initialDefaultValue]);
+  }, [isOpen, translationToEdit, mode, initialKey, initialDefaultValue, languages]);
 
   const resetForm = () => {
     setKey("");
-    setDefaultValue("");
-    setTranslations({});
+    setDefaultLangCode(null);
+    setRows([]);
   };
+
+  const usedCodes = useMemo(
+    () => new Set(rows.map((r) => r.langCode)),
+    [rows]
+  );
+
+  const availableLanguages = useMemo(
+    () => languages.filter((l) => !usedCodes.has(l.code)),
+    [languages, usedCodes]
+  );
+
+  const availableByRow = useMemo(
+    () =>
+      rows.map((row) =>
+        languages.filter(
+          (l) => l.code === row.langCode || !usedCodes.has(l.code)
+        )
+      ),
+    [rows, languages, usedCodes]
+  );
+
+  const canAddRow = availableLanguages.length > 0;
+
+  const handleAddRow = useCallback(() => {
+    if (availableLanguages.length === 0) return;
+    const newCode = availableLanguages[0].code;
+    setRows((prev) => [...prev, { langCode: newCode, value: "" }]);
+    setDefaultLangCode((prev) => prev ?? newCode);
+  }, [availableLanguages]);
+
+  const handleRemoveRow = useCallback(
+    (index: number) => {
+      const removedCode = rows[index]?.langCode;
+      setRows((prev) => prev.filter((_, i) => i !== index));
+      if (defaultLangCode === removedCode) {
+        setDefaultLangCode(null);
+      }
+    },
+    [rows, defaultLangCode]
+  );
+
+  const handleLangChange = useCallback(
+    (index: number, newCode: string) => {
+      const oldCode = rows[index]?.langCode;
+      setRows((prev) =>
+        prev.map((r, i) => (i === index ? { ...r, langCode: newCode } : r))
+      );
+      if (defaultLangCode === oldCode) {
+        setDefaultLangCode(newCode);
+      }
+    },
+    [rows, defaultLangCode]
+  );
+
+  const handleValueChange = useCallback((index: number, value: string) => {
+    setRows((prev) =>
+      prev.map((r, i) => (i === index ? { ...r, value } : r))
+    );
+  }, []);
 
   const title =
     dialogMode === "create" ? "Add Translation" : "Edit Translation";
   const submitLabel = dialogMode === "create" ? "Create" : "Update";
   const loadingLabel = dialogMode === "create" ? "Creating..." : "Updating...";
-
-  const handleTranslationChange = (code: string, value: string) => {
-    setTranslations((prev) => ({ ...prev, [code]: value }));
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -125,22 +217,32 @@ export function TranslationDialog({
       return;
     }
 
+    const hasTranslation = rows.some(
+      (r) => r.langCode && r.value.trim().length > 0
+    );
+    if (!hasTranslation) {
+      setError("At least one translation is required");
+      return;
+    }
+
     try {
       setIsSubmitting(true);
 
-      // Build translations dict, omitting empty values
       const cleanTranslations: Record<string, string> = {};
-      for (const [code, value] of Object.entries(translations)) {
-        const trimmed = value.trim();
-        if (trimmed) {
-          cleanTranslations[code] = trimmed;
+      for (const row of rows) {
+        const trimmed = row.value.trim();
+        if (trimmed && row.langCode) {
+          cleanTranslations[row.langCode] = trimmed;
         }
       }
+
+      const defaultRow = rows.find((r) => r.langCode === defaultLangCode);
+      const defaultValue = defaultRow?.value.trim() || null;
 
       if (dialogMode === "create") {
         await createTranslation({
           key: key.trim(),
-          default: defaultValue.trim() || null,
+          default: defaultValue,
           translations: cleanTranslations,
         });
         toast.success("Translation created successfully.");
@@ -152,7 +254,7 @@ export function TranslationDialog({
         }
 
         await updateTranslation(updateKey, {
-          default: defaultValue.trim() || null,
+          default: defaultValue,
           translations: cleanTranslations,
         });
         toast.success("Translation updated successfully.");
@@ -173,7 +275,7 @@ export function TranslationDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px] p-0 overflow-hidden">
+      <DialogContent className="sm:max-w-[860px] p-0 overflow-hidden">
         <form onSubmit={handleSubmit} className="max-h-[90vh] flex flex-col">
           <DialogHeader className="p-6 pb-4">
             <DialogTitle className="text-xl">{title}</DialogTitle>
@@ -196,33 +298,80 @@ export function TranslationDialog({
               />
             </div>
 
-            <div className="grid gap-2">
-              <Label htmlFor="translation-default">Default</Label>
-              <Textarea
-                id="translation-default"
-                value={defaultValue}
-                onChange={(e) => setDefaultValue(e.target.value)}
-                placeholder="Default fallback value"
-                rows={2}
-              />
-            </div>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label>Translations</Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleAddRow}
+                  disabled={!canAddRow}
+                  className="flex items-center gap-1"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  Add Translation
+                </Button>
+              </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {languages.map((lang) => (
-                <div key={lang.id} className="grid gap-2">
-                  <Label htmlFor={`translation-${lang.code}`}>
-                    {lang.name} ({lang.code})
-                  </Label>
-                  <Textarea
-                    id={`translation-${lang.code}`}
-                    value={translations[lang.code] || ""}
-                    onChange={(e) =>
-                      handleTranslationChange(lang.code, e.target.value)
-                    }
-                    rows={2}
+              {rows.length > 0 && (
+                <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+                  <span className="w-[50px] shrink-0 text-center">Default</span>
+                  <span className="w-[160px] shrink-0">Language</span>
+                  <span className="flex-1">Value</span>
+                  <span className="w-9 shrink-0" />
+                </div>
+              )}
+
+              {rows.map((row, index) => (
+                <div key={index} className="flex items-start gap-2">
+                  <input
+                    type="radio"
+                    name="default-lang"
+                    checked={defaultLangCode === row.langCode}
+                    onChange={() => setDefaultLangCode(row.langCode)}
+                    title="Set as default"
+                    className="mt-3 w-[50px] shrink-0 cursor-pointer accent-primary"
                   />
+                  <Select
+                    value={row.langCode}
+                    onValueChange={(val) => handleLangChange(index, val)}
+                  >
+                    <SelectTrigger className="w-[160px] shrink-0 rounded-md">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {(availableByRow[index] ?? []).map((lang) => (
+                        <SelectItem key={lang.code} value={lang.code}>
+                          {lang.name} ({lang.code})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Textarea
+                    value={row.value}
+                    onChange={(e) => handleValueChange(index, e.target.value)}
+                    placeholder="Translation value"
+                    rows={1}
+                    className="flex-1 min-h-[40px]"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleRemoveRow(index)}
+                    className="shrink-0 mt-0.5"
+                  >
+                    <Trash2 className="h-4 w-4 text-red-500" />
+                  </Button>
                 </div>
               ))}
+
+              {rows.length === 0 && (
+                <p className="text-sm text-muted-foreground">
+                  No translations added yet. Click "Add Translation" to start.
+                </p>
+              )}
             </div>
           </div>
 

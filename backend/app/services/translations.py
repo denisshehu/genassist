@@ -7,6 +7,7 @@ from injector import inject
 from app.cache.redis_cache import make_key_builder, invalidate_cache
 from app.core.exceptions.error_messages import ErrorKey
 from app.core.exceptions.exception_classes import AppException
+from app.db.models.translation import TranslationKeyModel
 from app.repositories.translations import LanguagesRepository, TranslationsRepository
 from app.schemas.translation import (
     LanguageCreate,
@@ -22,7 +23,17 @@ translation_all_key_builder = make_key_builder("-")  # type: ignore[assignment]
 language_all_key_builder = make_key_builder("-")  # type: ignore[assignment]
 
 
-def _model_to_read(row) -> TranslationRead:
+def _parse_lang_code(accept_language: Optional[str]) -> Optional[str]:
+    """Extract primary language code from an Accept-Language header value."""
+    if not accept_language:
+        return None
+    primary_token = accept_language.split(",")[0].strip()
+    if not primary_token:
+        return None
+    return primary_token.split("-")[0].lower()
+
+
+def _model_to_read(row: TranslationKeyModel) -> TranslationRead:
     """Convert a TranslationKeyModel (with eagerly loaded values) to TranslationRead."""
     translations = {v.language.code: v.value for v in row.values}
     return TranslationRead(
@@ -31,6 +42,29 @@ def _model_to_read(row) -> TranslationRead:
         default=row.default_value,
         translations=translations,
     )
+
+
+def _resolve_single(
+    translation: Optional[TranslationRead],
+    lang_code: Optional[str],
+    default: Optional[str],
+) -> Optional[str]:
+    """Resolve a single translation value with fallback chain."""
+    if default is None or default == "":
+        return None
+
+    if translation is None:
+        return default
+
+    if lang_code:
+        value = translation.translations.get(lang_code)
+        if value:
+            return value
+
+    if translation.default:
+        return translation.default
+
+    return default
 
 
 @inject
@@ -52,7 +86,7 @@ class LanguagesService:
         existing = await self.repository.get_by_code(dto.code)
         if existing:
             raise AppException(
-                status_code=400, error_key=ErrorKey.TRANSLATION_ALREADY_EXISTS
+                status_code=400, error_key=ErrorKey.LANGUAGE_ALREADY_EXISTS
             )
         row = await self.repository.create(dto.code, dto.name)
         await invalidate_cache("languages:get_all", None)
@@ -107,17 +141,11 @@ class TranslationsService:
         accept_language: Optional[str],
         default: Optional[str] = None,
     ) -> Optional[str]:
-        """
-        Resolve a translation value for a given key and `Accept-Language` header.
-        """
+        """Resolve a translation value for a given key and Accept-Language header."""
         if default is None or default == "":
             return None
 
-        lang_code: Optional[str] = None
-        if accept_language:
-            primary_token = accept_language.split(",")[0].strip()
-            if primary_token:
-                lang_code = primary_token.split("-")[0].lower()
+        lang_code = _parse_lang_code(accept_language)
 
         try:
             translation = await self.get_by_key(key)
@@ -126,15 +154,7 @@ class TranslationsService:
                 return default
             raise
 
-        if lang_code:
-            value = translation.translations.get(lang_code)
-            if value:
-                return value
-
-        if translation.default:
-            return translation.default
-
-        return default
+        return _resolve_single(translation, lang_code, default)
 
     async def resolve_many(
         self,
@@ -145,66 +165,37 @@ class TranslationsService:
         Batch-resolve multiple translation keys in one pass over the cached list.
         `items` maps translation key -> default value.
         """
-        lang_code: Optional[str] = None
-        if accept_language:
-            primary_token = accept_language.split(",")[0].strip()
-            if primary_token:
-                lang_code = primary_token.split("-")[0].lower()
-
+        lang_code = _parse_lang_code(accept_language)
         lookup = await self._get_all_as_dict()
-        result: dict[str, Optional[str]] = {}
-
-        for key, default in items.items():
-            if default is None or default == "":
-                result[key] = None
-                continue
-
-            translation = lookup.get(key)
-            if translation is None:
-                result[key] = default
-                continue
-
-            if lang_code:
-                value = translation.translations.get(lang_code)
-                if value:
-                    result[key] = value
-                    continue
-
-            if translation.default:
-                result[key] = translation.default
-            else:
-                result[key] = default
-
-        return result
+        return {
+            key: _resolve_single(lookup.get(key), lang_code, default)
+            for key, default in items.items()
+        }
 
     async def update(self, key: str, dto: TranslationUpdate) -> TranslationRead:
-        existing = await self.repository.get_by_key(key)
-        if not existing:
-            raise AppException(status_code=404, error_key=ErrorKey.NOT_FOUND)
         lang_map = await self.languages_repository.get_code_to_id_map()
         updated = await self.repository.update(key, dto, lang_map)
+        if not updated:
+            raise AppException(status_code=404, error_key=ErrorKey.NOT_FOUND)
         await invalidate_cache("translations:get_all", None)
         return _model_to_read(updated)
 
     async def delete(self, key: str) -> None:
-        existing = await self.repository.get_by_key(key)
-        if not existing:
+        deleted = await self.repository.delete_by_key(key)
+        if not deleted:
             raise AppException(status_code=404, error_key=ErrorKey.NOT_FOUND)
-        await self.repository.delete_by_key(key)
         await invalidate_cache("translations:get_all", None)
 
     async def get_languages_for_prefix(self, prefix: str) -> List[str]:
         """
         Return language codes that have at least one non-empty translation
-        for keys matching the given prefix.
+        for keys matching the given prefix. Uses the cached translation list.
         """
-        rows = await self.repository.get_by_prefix(prefix)
+        all_translations = await self.get_all()
         found: set[str] = set()
-
-        for row in rows:
-            for val in row.values:
-                if val.value and val.value.strip():
-                    found.add(val.language.code)
-
-        # Return in sorted order for stability
+        for t in all_translations:
+            if t.key.startswith(prefix):
+                for code, value in t.translations.items():
+                    if value and value.strip():
+                        found.add(code)
         return sorted(found)

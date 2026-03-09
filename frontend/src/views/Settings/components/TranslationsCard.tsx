@@ -4,13 +4,16 @@ import { TableCell, TableRow } from "@/components/table";
 import { Button } from "@/components/button";
 import { Pencil, Trash2 } from "lucide-react";
 import { toast } from "react-hot-toast";
-import {
-  deleteTranslation,
-  getTranslations,
-  getLanguages,
-} from "@/services/translations";
-import { Language, Translation } from "@/interfaces/translation.interface";
+import { deleteTranslation, getTranslations } from "@/services/translations";
+import { Translation } from "@/interfaces/translation.interface";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
+
+const HEADERS = [
+  { label: "Key", className: "w-48" },
+  { label: "Default", className: "w-64" },
+  { label: "Languages", className: "w-48" },
+  { label: "Actions", className: "w-28" },
+];
 
 interface TranslationsCardProps {
   searchQuery: string;
@@ -29,17 +32,12 @@ export function TranslationsCard({
   onRefresh,
 }: TranslationsCardProps) {
   const [translations, setTranslations] = useState<Translation[]>([]);
-  const [languages, setLanguages] = useState<Language[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [translationToDelete, setTranslationToDelete] =
     useState<Translation | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-
-  useEffect(() => {
-    getLanguages().then(setLanguages).catch(() => {});
-  }, []);
 
   useEffect(() => {
     const fetchTranslations = async () => {
@@ -62,18 +60,6 @@ export function TranslationsCard({
 
     fetchTranslations();
   }, [refreshKey]);
-
-  const headers = useMemo(() => {
-    const base = [
-      { label: "Key", className: "w-40" },
-      { label: "Default", className: "w-40" },
-    ];
-    const langHeaders = languages.map((lang) => ({
-      label: lang.code.toUpperCase(),
-      className: "w-32",
-    }));
-    return [...base, ...langHeaders, { label: "Actions", className: "w-28" }];
-  }, [languages]);
 
   const handleDeleteClick = (row: Translation) => {
     if (!row.key) return;
@@ -122,9 +108,13 @@ export function TranslationsCard({
 
   const renderRow = (row: Translation) => {
     const cellClass =
-      "max-w-[140px] truncate whitespace-nowrap overflow-hidden text-ellipsis align-middle";
-    const longCellClass =
       "max-w-[200px] truncate whitespace-nowrap overflow-hidden text-ellipsis align-middle";
+    const longCellClass =
+      "max-w-[280px] truncate whitespace-nowrap overflow-hidden text-ellipsis align-middle";
+
+    const langCodes = Object.keys(row.translations)
+      .filter((code) => row.translations[code]?.trim())
+      .map((code) => code.toUpperCase());
 
     return (
       <TableRow key={row.id || row.key}>
@@ -134,14 +124,22 @@ export function TranslationsCard({
         <TableCell className={longCellClass} title={row.default ?? ""}>
           {row.default ?? ""}
         </TableCell>
-        {languages.map((lang) => {
-          const value = row.translations[lang.code] ?? "";
-          return (
-            <TableCell key={lang.id} className={cellClass} title={value}>
-              {value}
-            </TableCell>
-          );
-        })}
+        <TableCell className={cellClass}>
+          {langCodes.length > 0 ? (
+            <div className="flex flex-wrap gap-1">
+              {langCodes.map((code) => (
+                <span
+                  key={code}
+                  className="inline-flex items-center rounded-md bg-muted px-2 py-0.5 text-xs font-medium"
+                >
+                  {code}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <span className="text-muted-foreground text-sm">None</span>
+          )}
+        </TableCell>
         <TableCell>
           <div className="flex items-center gap-1">
             <Button
@@ -185,7 +183,7 @@ export function TranslationsCard({
         loading={loading}
         error={error}
         searchQuery={searchQuery}
-        headers={headers}
+        headers={HEADERS}
         renderRow={renderRow}
         emptyMessage="No translations found"
         searchEmptyMessage="No translations found matching your search"

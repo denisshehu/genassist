@@ -162,9 +162,7 @@ export const GenAgentChat: React.FC<GenAgentChatProps> = ({
     welcomeTitle,
     welcomeImageUrl,
     welcomeMessage,
-    inputDisclaimer,
-    inputDisclaimerLinkUrl,
-    inputDisclaimerLinkLabel,
+    inputDisclaimerHtml,
     thinkingPhrases,
     thinkingDelayMs,
   } = useChat({
@@ -1189,24 +1187,9 @@ export const GenAgentChat: React.FC<GenAgentChatProps> = ({
     fontFamily,
   };
 
-  const showAgentDisclaimer = Boolean(inputDisclaimer || inputDisclaimerLinkUrl);
+  const showAgentDisclaimer = Boolean(inputDisclaimerHtml);
   const agentDisclaimerContent = showAgentDisclaimer && (
-    <>
-      {inputDisclaimer && <span>{inputDisclaimer}</span>}
-      {inputDisclaimerLinkUrl && (
-        <>
-          {inputDisclaimer && ' '}
-          <a
-            href={inputDisclaimerLinkUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{ color: primaryColor || '#6366f1', textDecoration: 'underline' }}
-          >
-            {inputDisclaimerLinkLabel || inputDisclaimerLinkUrl}
-          </a>
-        </>
-      )}
-    </>
+    <span dangerouslySetInnerHTML={{ __html: inputDisclaimerHtml! }} />
   );
 
   const getResponsiveDimensions = () => {

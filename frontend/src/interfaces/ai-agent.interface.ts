@@ -43,9 +43,7 @@ export interface AgentConfig {
   is_active?: boolean;
   welcome_message?: string;
   welcome_title?: string;
-  input_disclaimer?: string;
-  input_disclaimer_link_url?: string;
-  input_disclaimer_link_label?: string;
+  input_disclaimer_html?: string;
   thinking_phrase_delay?: number;
   possible_queries?: string[];
   thinking_phrases?: string[];

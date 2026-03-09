@@ -97,7 +97,6 @@ class TranslationsRepository:
                 )
         self.db.add(obj)
         await self.db.commit()
-        await self.db.refresh(obj, attribute_names=["values"])
         # Re-fetch with eager loading to populate language relationships
         return await self.get_by_key(dto.key)  # type: ignore[return-value]
 

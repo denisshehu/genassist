@@ -562,20 +562,14 @@ export class ChatService {
         anyData.agent_thinking_phrases;
       const thinkingDelaySec: number | undefined =
         anyData.agent_thinking_phrase_delay;
-      const inputDisclaimer: string | undefined = anyData.agent_input_disclaimer;
-      const inputDisclaimerLinkUrl: string | undefined =
-        anyData.agent_input_disclaimer_link_url;
-      const inputDisclaimerLinkLabel: string | undefined =
-        anyData.agent_input_disclaimer_link_label;
+      const inputDisclaimerHtml: string | undefined = anyData.agent_input_disclaimer_html;
 
       this.welcomeData = {
         title: welcomeTitle || null,
         message: null,
         imageUrl: welcomeImageUrl || null,
         possibleQueries: this.possibleQueries,
-        inputDisclaimer: inputDisclaimer ?? null,
-        inputDisclaimerLinkUrl: inputDisclaimerLinkUrl ?? null,
-        inputDisclaimerLinkLabel: inputDisclaimerLinkLabel ?? null,
+        inputDisclaimerHtml: inputDisclaimerHtml ?? null,
       };
 
       if (Array.isArray(thinkingPhrases) && thinkingPhrases.length > 0) {

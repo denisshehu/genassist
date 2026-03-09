@@ -1,7 +1,7 @@
 from typing import Optional
 from uuid import UUID
 
-from sqlalchemy import ForeignKey, Integer, String, LargeBinary, Boolean
+from sqlalchemy import ForeignKey, Integer, String, Text, LargeBinary, Boolean
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
@@ -21,9 +21,7 @@ class AgentModel(Base):
     thinking_phrases: Mapped[str] = mapped_column(String(500), server_default="Thinking...")
     thinking_phrase_delay: Mapped[Integer] = mapped_column(Integer, nullable=True)
     workflow_id: Mapped[UUID] = mapped_column(ForeignKey("workflows.id"), nullable=True)
-    input_disclaimer: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
-    input_disclaimer_link_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
-    input_disclaimer_link_label: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
+    input_disclaimer_html: Mapped[Optional[str]] = mapped_column(Text(), nullable=True)
 
     # Relationships
     operator = relationship("OperatorModel", back_populates="agent", uselist=False)

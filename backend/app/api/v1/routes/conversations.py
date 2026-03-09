@@ -197,8 +197,7 @@ async def start(
     translation_items: dict[str, str | None] = {
         f"{agent_prefix}.welcome_message": agent_data.get("welcome_message"),
         f"{agent_prefix}.welcome_title": agent_data.get("welcome_title"),
-        f"{agent_prefix}.input_disclaimer": agent_data.get("input_disclaimer"),
-        f"{agent_prefix}.input_disclaimer_link_label": agent_data.get("input_disclaimer_link_label"),
+        f"{agent_prefix}.input_disclaimer_html": agent_data.get("input_disclaimer_html"),
     }
     for idx, query in enumerate(possible_queries):
         translation_items[f"{agent_prefix}.possible_queries.{idx}"] = query
@@ -209,8 +208,7 @@ async def start(
 
     welcome_message = resolved.get(f"{agent_prefix}.welcome_message")
     welcome_title = resolved.get(f"{agent_prefix}.welcome_title")
-    input_disclaimer = resolved.get(f"{agent_prefix}.input_disclaimer")
-    input_disclaimer_link_label = resolved.get(f"{agent_prefix}.input_disclaimer_link_label")
+    input_disclaimer_html = resolved.get(f"{agent_prefix}.input_disclaimer_html")
     resolved_queries = [
         resolved.get(f"{agent_prefix}.possible_queries.{idx}") or query
         for idx, query in enumerate(possible_queries)
@@ -234,9 +232,7 @@ async def start(
         "agent_thinking_phrase_delay": agent_data.get("thinking_phrase_delay"),
         "agent_has_welcome_image": agent_data.get("welcome_image") is not None,
         "agent_chat_input_metadata": agent_data.get("workflow"),
-        "agent_input_disclaimer": input_disclaimer,
-        "agent_input_disclaimer_link_url": agent_data.get("input_disclaimer_link_url"),
-        "agent_input_disclaimer_link_label": input_disclaimer_link_label,
+        "agent_input_disclaimer_html": input_disclaimer_html,
         "agent_available_languages": available_languages,
     }
 

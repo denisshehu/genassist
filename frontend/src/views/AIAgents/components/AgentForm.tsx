@@ -32,6 +32,7 @@ import {
 } from "@/components/sheet";
 import { Textarea } from "@/components/textarea";
 import { TranslationDialog } from "@/views/Settings/components/TranslationDialog";
+import { DisclaimerEditor } from "@/components/DisclaimerEditor";
 import { getTranslationByKey } from "@/services/translations";
 import { getTranslationCount } from "../utils";
 
@@ -41,9 +42,7 @@ interface AgentFormData {
   description: string;
   welcome_message?: string;
   welcome_title?: string;
-  input_disclaimer?: string;
-  input_disclaimer_link_url?: string;
-  input_disclaimer_link_label?: string;
+  input_disclaimer_html?: string;
   thinking_phrase_delay?: number;
   possible_queries?: string[];
   thinking_phrases?: string[];
@@ -79,6 +78,10 @@ const TranslationTrigger: React.FC<TranslationTriggerProps> = ({
   const [translationCount, setTranslationCount] = useState(0);
 
   useEffect(() => {
+    // Only fetch translation count after a save (refreshCounter > 0),
+    // not on initial mount — avoids unnecessary API calls when the dialog opens.
+    if (refreshCounter === 0) return;
+
     let cancelled = false;
 
     const loadTranslationCount = async () => {
@@ -173,9 +176,7 @@ const AgentForm: React.FC<AgentFormProps> = ({
       description: "",
       welcome_message: "",
       welcome_title: "",
-      input_disclaimer: "",
-      input_disclaimer_link_url: "",
-      input_disclaimer_link_label: "",
+      input_disclaimer_html: "",
       thinking_phrase_delay: 0,
       possible_queries: [],
       thinking_phrases: [],
@@ -861,64 +862,22 @@ const AgentForm: React.FC<AgentFormProps> = ({
               </div>
               <div className="space-y-2">
                 <div className="flex items-center justify-between gap-2">
-                  <Label htmlFor="input_disclaimer">Disclaimer</Label>
+                  <Label>Disclaimer</Label>
                   {isEditMode && id && (
                     <TranslationTrigger
-                      translationKey={`agent.${id}.input_disclaimer`}
-                      currentValue={formData.input_disclaimer || ""}
+                      translationKey={`agent.${id}.input_disclaimer_html`}
+                      currentValue={formData.input_disclaimer_html || ""}
                     />
                   )}
                 </div>
-                <Input
-                  id="input_disclaimer"
-                  name="input_disclaimer"
-                  value={formData.input_disclaimer}
-                  onChange={handleInputChange}
-                  placeholder="e.g. Agent can make mistakes."
+                <DisclaimerEditor
+                  value={formData.input_disclaimer_html || ""}
+                  onChange={(html) =>
+                    setFormData((prev) => ({ ...prev, input_disclaimer_html: html }))
+                  }
                 />
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  <div className="space-y-1.5">
-                    <Label
-                      htmlFor="input_disclaimer_link_url"
-                      className="text-muted-foreground text-xs"
-                    >
-                      Disclaimer link URL
-                    </Label>
-                    <Input
-                      id="input_disclaimer_link_url"
-                      name="input_disclaimer_link_url"
-                      type="url"
-                      value={formData.input_disclaimer_link_url}
-                      onChange={handleInputChange}
-                      placeholder="https://example.com/info"
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <div className="flex items-center justify-between gap-2">
-                      <Label
-                        htmlFor="input_disclaimer_link_label"
-                        className="text-muted-foreground text-xs"
-                      >
-                        Link label
-                      </Label>
-                      {isEditMode && id && (
-                        <TranslationTrigger
-                          translationKey={`agent.${id}.input_disclaimer_link_label`}
-                          currentValue={formData.input_disclaimer_link_label || ""}
-                        />
-                      )}
-                    </div>
-                    <Input
-                      id="input_disclaimer_link_label"
-                      name="input_disclaimer_link_label"
-                      value={formData.input_disclaimer_link_label}
-                      onChange={handleInputChange}
-                      placeholder="e.g. Check important info."
-                    />
-                  </div>
-                </div>
                 <p className="text-xs text-muted-foreground">
-                  The link is displayed after the disclaimer text.
+                  Supports text, bold, font size, and links.
                 </p>
               </div>
             </div>
@@ -1065,7 +1024,7 @@ export const AgentFormDialog = ({
       <SheetContent
         hideOverlay={true}
         hideDefaultClose={true}
-        className="sm:max-w-lg w-full flex flex-col p-0 top-2 right-2 h-[calc(100vh-1rem)] rounded-2xl border-2 shadow-2xl data-[state=closed]:slide-out-to-right-full data-[state=open]:slide-in-from-right-full"
+        className="sm:max-w-lg w-full flex flex-col p-0 top-2 right-2 bottom-auto h-[calc(100vh-1rem)] rounded-2xl border-2 shadow-2xl data-[state=closed]:slide-out-to-right-full data-[state=open]:slide-in-from-right-full overflow-hidden"
       >
         <SheetHeader className="p-6 pb-4 border-b shrink-0 flex flex-row">
           <SheetTitle className="text-xl font-semibold truncate">
