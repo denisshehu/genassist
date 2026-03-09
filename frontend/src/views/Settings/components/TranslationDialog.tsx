@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -83,6 +83,9 @@ export function TranslationDialog({
       .catch(() => toast.error("Failed to load languages."));
   }, []);
 
+  const languagesRef = React.useRef(languages);
+  languagesRef.current = languages;
+
   useEffect(() => {
     if (!isOpen) return;
 
@@ -116,7 +119,7 @@ export function TranslationDialog({
         } else {
           setDialogMode("create");
           setKey(initialKey);
-          const firstLang = languages[0]?.code ?? "en";
+          const firstLang = languagesRef.current[0]?.code ?? "en";
           setRows(
             initialDefaultValue
               ? [{ langCode: firstLang, value: initialDefaultValue }]
@@ -136,7 +139,8 @@ export function TranslationDialog({
     return () => {
       cancelled = true;
     };
-  }, [isOpen, translationToEdit, mode, initialKey, initialDefaultValue, languages]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, translationToEdit, mode, initialKey, initialDefaultValue]);
 
   const resetForm = () => {
     setKey("");

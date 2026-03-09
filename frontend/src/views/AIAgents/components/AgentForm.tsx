@@ -78,10 +78,6 @@ const TranslationTrigger: React.FC<TranslationTriggerProps> = ({
   const [translationCount, setTranslationCount] = useState(0);
 
   useEffect(() => {
-    // Only fetch translation count after a save (refreshCounter > 0),
-    // not on initial mount — avoids unnecessary API calls when the dialog opens.
-    if (refreshCounter === 0) return;
-
     let cancelled = false;
 
     const loadTranslationCount = async () => {
