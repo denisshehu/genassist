@@ -87,6 +87,10 @@ export function LLMProviderDialog({
         setConnectionData(providerToEdit.connection_data);
         setIsActive(providerToEdit.is_active === 1);
         setShowAdvanced(false);
+        setTestStatus(providerToEdit.connection_status ?? null);
+        setTestedConnectionData(
+          providerToEdit.connection_status ? structuredClone(providerToEdit.connection_data) : null
+        );
       } else {
         resetForm();
       }
@@ -207,6 +211,7 @@ export function LLMProviderDialog({
         llm_model_provider: llmType,
         llm_model: llmModel,
         connection_data: connectionData,
+        connection_status: hasChangedSinceTest ? undefined : (testStatus ?? undefined),
         is_active: isActive ? 1 : 0,
       };
 

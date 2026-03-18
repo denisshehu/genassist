@@ -38,6 +38,12 @@ class LlmProviderService:
         #     raise AppException(error_key=ErrorKey.MISSING_API_KEY_LLM_PROVIDER)
 
         data.connection_data = connection_data
+
+        if data.connection_status:
+            data.connection_status = data.connection_status.model_dump(mode="json")
+        else:
+            data.connection_status = {"status": "Untested", "last_tested_at": None, "message": None}
+
         model = await self.repository.create(data)
         return model
 
@@ -66,7 +72,43 @@ class LlmProviderService:
 
     async def update(self, llm_provider_id: UUID, data: LlmProviderUpdate):
         obj = await self.repository.get_by_id(llm_provider_id)
-        for field, value in data.model_dump(exclude_unset=True).items():
+        if not obj:
+            raise AppException(error_key=ErrorKey.LLM_PROVIDER_NOT_FOUND, status_code=404)
+
+        update_data = data.model_dump(exclude_unset=True, mode="json")
+
+        if "connection_data" in update_data:
+            existing_conn_data = obj.connection_data or {}
+            connection_data_changed = any(
+                update_data["connection_data"].get(k) != existing_conn_data.get(k)
+                for k in update_data["connection_data"]
+            )
+
+            if connection_data_changed:
+                incoming_cs = update_data.get("connection_status")
+                stored_cs = obj.connection_status or {}
+                stored_last_tested = stored_cs.get("last_tested_at")
+
+                incoming_last_tested = None
+                if isinstance(incoming_cs, dict):
+                    incoming_last_tested = incoming_cs.get("last_tested_at")
+                elif hasattr(incoming_cs, "last_tested_at"):
+                    incoming_last_tested = getattr(incoming_cs, "last_tested_at", None)
+
+                fresh_test = bool(incoming_cs) and incoming_last_tested != stored_last_tested
+
+                if fresh_test:
+                    update_data["connection_status"] = incoming_cs
+                else:
+                    update_data["connection_status"] = {"status": "Untested", "last_tested_at": None, "message": None}
+            else:
+                # connection_data unchanged — preserve provided connection_status (e.g., test result)
+                if not update_data.get("connection_status"):
+                    update_data.pop("connection_status", None)
+        else:
+            update_data.pop("connection_status", None)
+
+        for field, value in update_data.items():
             setattr(obj, field, value)
         model = await self.repository.update(obj)
         return model

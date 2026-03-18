@@ -4,12 +4,15 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.schemas.common import ConnectionStatus
+
 
 class LlmProviderBase(BaseModel):
     name: Optional[str] = None
     llm_model_provider: Optional[str] = None
     llm_model: Optional[str] = None
     connection_data: Optional[Dict[str, Any]] = Field(None, description="Connection parameters like api key.")
+    connection_status: Optional[ConnectionStatus] = None
     is_active: Optional[int] = 1
     is_default: Optional[int] = 0
     model_config = ConfigDict(

@@ -21780,6 +21780,16 @@
             "title": "Connection Data",
             "description": "Connection parameters like api key."
           },
+          "connection_status": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ConnectionStatus"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "is_active": {
             "anyOf": [
               {
@@ -21826,6 +21836,16 @@
             "additionalProperties": true,
             "type": "object",
             "title": "Connection Data"
+          },
+          "connection_status": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ConnectionStatus"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "is_active": {
             "anyOf": [
@@ -21908,6 +21928,16 @@
             ],
             "title": "Connection Data",
             "description": "Connection parameters like api key."
+          },
+          "connection_status": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ConnectionStatus"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "is_active": {
             "anyOf": [
@@ -21992,6 +22022,16 @@
             ],
             "title": "Connection Data",
             "description": "Connection parameters like api key."
+          },
+          "connection_status": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ConnectionStatus"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "is_active": {
             "anyOf": [
