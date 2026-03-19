@@ -22,6 +22,8 @@ llm_provider_all_key_builder = make_key_builder("-")
 
 @inject
 class LlmProviderService:
+    encrypted_fields = ["api_key"]
+
     def __init__(self, repository: LlmProviderRepository):
         self.repository = repository
 
@@ -30,13 +32,9 @@ class LlmProviderService:
 
         api_key = connection_data.get("api_key")
         if api_key:
-            encrypted = encrypt_key(api_key)
-            masked = get_masked_api_key(api_key)
-            connection_data["api_key"] = encrypted
-            connection_data["masked_api_key"] = masked
-        # else:
-        #     raise AppException(error_key=ErrorKey.MISSING_API_KEY_LLM_PROVIDER)
+            connection_data["masked_api_key"] = get_masked_api_key(api_key)
 
+        connection_data = await self.encrypt_connection_data_fields(connection_data)
         data.connection_data = connection_data
 
         if data.connection_status:
@@ -77,8 +75,22 @@ class LlmProviderService:
 
         update_data = data.model_dump(exclude_unset=True, mode="json")
 
+        existing_conn_data = obj.connection_data or {}
+        update_conn_data = update_data.get("connection_data", {})
+
+        for field_name in self.encrypted_fields:
+            if field_name in update_conn_data:
+                if update_conn_data[field_name] == "" or update_conn_data[field_name] is None:
+                    del update_conn_data[field_name]
+                elif (
+                    field_name not in existing_conn_data
+                    or update_conn_data[field_name] != existing_conn_data[field_name]
+                ):
+                    if field_name == "api_key":
+                        update_conn_data["masked_api_key"] = get_masked_api_key(update_conn_data[field_name])
+                    update_conn_data[field_name] = encrypt_key(update_conn_data[field_name])
+
         if "connection_data" in update_data:
-            existing_conn_data = obj.connection_data or {}
             connection_data_changed = any(
                 update_data["connection_data"].get(k) != existing_conn_data.get(k)
                 for k in update_data["connection_data"]
@@ -137,21 +149,16 @@ class LlmProviderService:
         if provider_id:
             stored_raw = await self.repository.get_by_id(provider_id)
             raw_conn = dict((stored_raw.connection_data if stored_raw else None) or {})
-            decrypted_conn = dict(raw_conn)
-            if "api_key" in decrypted_conn and decrypted_conn["api_key"]:
-                try:
-                    decrypted_conn["api_key"] = decrypt_key(decrypted_conn["api_key"])
-                except Exception as e:
-                    logger.error(f"Error decrypting api_key for provider {provider_id}: {e}")
+            decrypted_conn = await self.decrypt_connection_data_fields(dict(raw_conn), provider_id)
 
             base = dict(decrypted_conn)
             for k, v in cd.items():
                 if v is None or v == "":
                     continue
-                if k == "api_key" and v == raw_conn.get("api_key"):
-                    pass  # unchanged encrypted value — keep stored decrypted value
+                if k in self.encrypted_fields and v == raw_conn.get(k):
+                    pass  # unchanged encrypted field — keep stored decrypted value
                 else:
-                    base[k] = v
+                    base[k] = v  # new plaintext value from user
             cd = base
 
         cd.pop("masked_api_key", None)
@@ -171,12 +178,6 @@ class LlmProviderService:
                 provider = "openai"
                 if "base_url" not in cd:
                     cd["base_url"] = "https://openrouter.ai/api/v1"
-                if "api_key" in cd:
-                    cd["api_key"] = decrypt_key(cd["api_key"])
-            elif "api_key" in cd and provider not in ["ollama"]:
-                # Only decrypt if not already a provider_id merge (which already decrypted above)
-                if not provider_id:
-                    cd["api_key"] = decrypt_key(cd["api_key"])
 
             if provider == "openai" and (llm_model_provider or "").lower() == "openai":
                 os.environ["OPENAI_API_KEY"] = cd["api_key"]
@@ -195,3 +196,29 @@ class LlmProviderService:
         except Exception as e:
             logger.error(f"LLM provider test connection failed: {e}")
             return {"success": False, "message": str(e)}
+
+    async def encrypt_connection_data_fields(
+        self, connection_data: Dict[str, Any], provider_id: Optional[UUID] = None
+    ) -> Dict[str, Any]:
+        for field_name in self.encrypted_fields:
+            if field_name in connection_data and connection_data[field_name]:
+                try:
+                    connection_data[field_name] = encrypt_key(connection_data[field_name])
+                except Exception as e:
+                    logger.error(
+                        f"Error encrypting field '{field_name}' for provider ID '{provider_id}': {e}"
+                    )
+        return connection_data
+
+    async def decrypt_connection_data_fields(
+        self, connection_data: Dict[str, Any], provider_id: Optional[UUID] = None
+    ) -> Dict[str, Any]:
+        for field_name in self.encrypted_fields:
+            if field_name in connection_data and connection_data[field_name]:
+                try:
+                    connection_data[field_name] = decrypt_key(connection_data[field_name])
+                except Exception as e:
+                    logger.error(
+                        f"Error decrypting field '{field_name}' for provider ID '{provider_id}': {e}"
+                    )
+        return connection_data
