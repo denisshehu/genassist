@@ -102,7 +102,7 @@ export function LLMProviderDialog({
       const defaultValues = supportedModels[llmType].fields.reduce(
         (acc, field) => {
           if (field.default !== undefined && !connectionData[field.name]) {
-            acc[field.name] = field.default;
+            acc[field.name] = field.default as string | number | string[];
           }
           return acc;
         },
@@ -357,7 +357,7 @@ export function LLMProviderDialog({
               <>
                 <div className="space-y-4">
                   {requiredFields.map((field) => (
-                    <div key={field.name} className="space-y-2">
+                    <div key={`${llmType}-${field.name}`} className="space-y-2">
                       <Label htmlFor={field.name}>
                         {field.label}
                         {field.required && <span className="text-red-500 ml-1">*</span>}
@@ -384,7 +384,7 @@ export function LLMProviderDialog({
                 <div className="space-y-4">
                   {showAdvanced &&
                     optionalFields.map((field) => (
-                      <div key={field.name} className="space-y-2">
+                      <div key={`${llmType}-${field.name}`} className="space-y-2">
                         <Label htmlFor={field.name}>
                           {field.label}
                           {field.required && <span className="text-red-500 ml-1">*</span>}
