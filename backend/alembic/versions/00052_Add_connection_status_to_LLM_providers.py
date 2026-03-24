@@ -1,7 +1,7 @@
 """Add connection status to LLM providers
 
 Revision ID: 89d6a38dfd1c
-Revises: a7b8c9d0e1f2
+Revises: c1d2e3f4a5b6
 Create Date: 2026-03-18 22:32:15.865762
 
 """
@@ -13,7 +13,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision: str = '89d6a38dfd1c'
-down_revision: Union[str, None] = 'a7b8c9d0e1f2'
+down_revision: Union[str, None] = 'c1d2e3f4a5b6'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
