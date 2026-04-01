@@ -58,7 +58,7 @@ const DynamicRagConfigSection: React.FC<DynamicRagConfigSectionProps> = ({
       Object.entries(schema).forEach(([ragType, typeSchema]) => {
         if (!initialConfig[ragType]) {
           initialConfig[ragType] = {
-            enabled: false,
+            enabled: ragType === 'vector' ? true : false,
           };
           hasChanges = true;
         }
@@ -97,6 +97,12 @@ const DynamicRagConfigSection: React.FC<DynamicRagConfigSectionProps> = ({
             }
           }
         });
+
+        if (ragType === 'vector' && initialConfig[ragType]?.enabled !== true) {
+          initialConfig[ragType].enabled = true;
+          initialConfig[ragType].vector_db_type = 'pgvector';
+          hasChanges = true;
+        }
       });
 
       if (hasChanges) {
@@ -258,7 +264,7 @@ const DynamicRagConfigSection: React.FC<DynamicRagConfigSectionProps> = ({
 
         <div className="col-span-2 space-y-4">
           {Object.entries(schema).map(([ragType, typeSchema]) => {
-            const isEnabled = Boolean(ragConfig[ragType]?.enabled);
+            const isEnabled = ragType === 'vector' ? true : Boolean(ragConfig[ragType]?.enabled);
 
             return (
               <Card key={ragType} className="w-full">
@@ -272,18 +278,20 @@ const DynamicRagConfigSection: React.FC<DynamicRagConfigSectionProps> = ({
                         {typeSchema.description}
                       </p>
                     </div>
-                    <div className="flex items-center space-x-2 ml-4">
-                      <Label htmlFor={`${ragType}-enabled`} className="text-sm">
-                        Enable
-                      </Label>
-                      <Switch
-                        id={`${ragType}-enabled`}
-                        checked={isEnabled}
-                        onCheckedChange={(checked) =>
-                          handleRagTypeToggle(ragType, checked)
-                        }
-                      />
-                    </div>
+                    {ragType !== 'vector' && (
+                      <div className="flex items-center space-x-2 ml-4">
+                        <Label htmlFor={`${ragType}-enabled`} className="text-sm">
+                          Enable
+                        </Label>
+                        <Switch
+                          id={`${ragType}-enabled`}
+                          checked={isEnabled}
+                          onCheckedChange={(checked) =>
+                            handleRagTypeToggle(ragType, checked)
+                          }
+                        />
+                      </div>
+                    )}
                   </div>
                 </CardHeader>
 
