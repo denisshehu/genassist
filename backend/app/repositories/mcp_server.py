@@ -146,26 +146,36 @@ class MCPServerRepository:
 
         # Update workflows if provided
         if workflows is not None:
-            # Delete existing workflows
             existing_workflows_query = select(MCPServerWorkflowModel).where(
                 MCPServerWorkflowModel.mcp_server_id == mcp_server_id
             )
             existing_workflows_result = await self.db.execute(existing_workflows_query)
-            for wf in existing_workflows_result.scalars().all():
-                await self.db.delete(wf)
+            existing_workflows = {wf.workflow_id: wf for wf in existing_workflows_result.scalars().all()}
+            incoming_workflows = {wf_data["workflow_id"]: wf_data for wf_data in workflows}
 
-            # Ensure DELETEs are sent before INSERTs to avoid unique constraint violation
+            # Delete workflows removed from the list
+            for workflow_id, wf in existing_workflows.items():
+                if workflow_id not in incoming_workflows:
+                    await self.db.delete(wf)
+
             await self.db.flush()
 
-            # Create new workflows
-            for wf_data in workflows:
-                workflow = MCPServerWorkflowModel(
-                    mcp_server_id=mcp_server.id,
-                    workflow_id=wf_data["workflow_id"],
-                    tool_name=wf_data["tool_name"],
-                    tool_description=wf_data["tool_description"],
-                )
-                self.db.add(workflow)
+            for workflow_id, wf_data in incoming_workflows.items():
+                if workflow_id in existing_workflows:
+                    # Update changed fields
+                    existing = existing_workflows[workflow_id]
+                    if existing.tool_name != wf_data["tool_name"]:
+                        existing.tool_name = wf_data["tool_name"]
+                    if existing.tool_description != wf_data["tool_description"]:
+                        existing.tool_description = wf_data["tool_description"]
+                else:
+                    # Insert new workflow
+                    self.db.add(MCPServerWorkflowModel(
+                        mcp_server_id=mcp_server.id,
+                        workflow_id=workflow_id,
+                        tool_name=wf_data["tool_name"],
+                        tool_description=wf_data["tool_description"],
+                    ))
 
         await self.db.commit()
         await self.db.refresh(mcp_server)
