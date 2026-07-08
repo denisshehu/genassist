@@ -112,4 +112,4 @@ const VoiceAgentNode: React.FC<NodeProps<VoiceAgentNodeData>> = ({
   );
 };
 
-export default React.memo(VoiceAgentNode);
+export default VoiceAgentNode;

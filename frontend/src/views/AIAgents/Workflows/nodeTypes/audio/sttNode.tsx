@@ -58,4 +58,4 @@ const STTNode: React.FC<NodeProps<STTNodeData>> = ({ id, data, selected }) => {
   );
 };
 
-export default React.memo(STTNode);
+export default STTNode;

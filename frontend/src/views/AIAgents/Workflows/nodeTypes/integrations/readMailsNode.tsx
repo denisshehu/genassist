@@ -104,4 +104,4 @@ const ReadMailsNode: React.FC<NodeProps<ReadMailsNodeData>> = ({
   );
 };
 
-export default React.memo(ReadMailsNode);
+export default ReadMailsNode;

@@ -34,4 +34,4 @@ const FinalizeConversationNode: React.FC<
   );
 };
 
-export default React.memo(FinalizeConversationNode);
+export default FinalizeConversationNode;

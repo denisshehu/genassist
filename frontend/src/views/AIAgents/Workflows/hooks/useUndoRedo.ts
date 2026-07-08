@@ -56,8 +56,8 @@ export const useUndoRedo = (
     // Debounce the snapshot to batch rapid changes (like dragging)
     debounceTimerRef.current = setTimeout(() => {
       const snapshot: HistoryState = {
-        nodes: [...nodes],
-        edges: [...edges],
+        nodes: JSON.parse(JSON.stringify(nodes)),
+        edges: JSON.parse(JSON.stringify(edges)),
       };
 
       setPast((prev) => {
@@ -88,8 +88,8 @@ export const useUndoRedo = (
 
     // Save current state to future
     const currentState: HistoryState = {
-      nodes: [...nodes],
-      edges: [...edges],
+      nodes: JSON.parse(JSON.stringify(nodes)),
+      edges: JSON.parse(JSON.stringify(edges)),
     };
 
     setPast(newPast);
@@ -119,8 +119,8 @@ export const useUndoRedo = (
 
     // Save current state to history
     const currentState: HistoryState = {
-      nodes: [...nodes],
-      edges: [...edges],
+      nodes: JSON.parse(JSON.stringify(nodes)),
+      edges: JSON.parse(JSON.stringify(edges)),
     };
 
     setFuture(newFuture);

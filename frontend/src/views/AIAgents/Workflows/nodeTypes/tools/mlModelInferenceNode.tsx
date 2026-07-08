@@ -78,4 +78,4 @@ const MLModelInferenceNode: React.FC<NodeProps<MLModelInferenceNodeData>> = ({
   );
 };
 
-export default React.memo(MLModelInferenceNode);
+export default MLModelInferenceNode;

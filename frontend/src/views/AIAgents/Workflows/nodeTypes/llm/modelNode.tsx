@@ -83,4 +83,4 @@ const LLModelNode: React.FC<NodeProps<LLMModelNodeData>> = ({
   );
 };
 
-export default React.memo(LLModelNode);
+export default LLModelNode;

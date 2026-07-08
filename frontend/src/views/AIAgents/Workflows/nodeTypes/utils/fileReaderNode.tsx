@@ -58,4 +58,4 @@ const FileReaderNode: React.FC<NodeProps<FileReaderNodeData>> = ({
   );
 };
 
-export default React.memo(FileReaderNode);
+export default FileReaderNode;

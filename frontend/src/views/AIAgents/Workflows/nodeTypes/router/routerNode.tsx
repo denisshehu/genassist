@@ -104,4 +104,4 @@ const RouterNode: React.FC<NodeProps<RouterNodeData>> = ({
   );
 };
 
-export default React.memo(RouterNode);
+export default RouterNode;

@@ -72,4 +72,4 @@ const HumanInTheLoopNode: React.FC<NodeProps<HumanInTheLoopNodeData>> = ({
   );
 };
 
-export default React.memo(HumanInTheLoopNode);
+export default HumanInTheLoopNode;

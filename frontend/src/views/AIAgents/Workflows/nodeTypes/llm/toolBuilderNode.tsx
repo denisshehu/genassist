@@ -70,4 +70,4 @@ const ToolBuilderNode: React.FC<NodeProps<ToolBuilderNodeData>> = ({
   );
 };
 
-export default React.memo(ToolBuilderNode);
+export default ToolBuilderNode;

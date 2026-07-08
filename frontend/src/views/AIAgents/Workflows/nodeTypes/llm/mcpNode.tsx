@@ -141,5 +141,5 @@ const MCPNode: React.FC<NodeProps<MCPNodeData>> = ({
   );
 };
 
-export default React.memo(MCPNode);
+export default MCPNode;
 

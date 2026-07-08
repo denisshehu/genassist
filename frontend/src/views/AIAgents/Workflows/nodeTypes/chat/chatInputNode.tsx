@@ -106,4 +106,4 @@ const ChatInputNode: React.FC<NodeProps<ChatInputNodeData>> = ({
   );
 };
 
-export default React.memo(ChatInputNode);
+export default ChatInputNode;

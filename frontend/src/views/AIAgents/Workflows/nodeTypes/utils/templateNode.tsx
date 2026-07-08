@@ -65,4 +65,4 @@ const TemplateNode: React.FC<NodeProps<TemplateNodeData>> = ({
   );
 };
 
-export default React.memo(TemplateNode);
+export default TemplateNode;

@@ -68,4 +68,4 @@ const DataMapperNode: React.FC<NodeProps<DataMapperNodeData>> = ({
   );
 };
 
-export default React.memo(DataMapperNode);
+export default DataMapperNode;

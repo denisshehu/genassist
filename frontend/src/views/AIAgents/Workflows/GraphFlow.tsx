@@ -60,8 +60,6 @@ import type { FieldSchema } from "@/interfaces/dynamicFormSchemas.interface";
 const nodeTypes = getNodeTypes();
 const edgeTypes = getEdgeTypes();
 
-const PRO_OPTIONS = { hideAttribution: true }; // remove React Flow watermark
-
 const GraphFlowContent: React.FC = () => {
   const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null);
 
@@ -273,7 +271,7 @@ const GraphFlowContent: React.FC = () => {
             ({ selected, dragging, width, height, ...rest }: Node) => rest
           ),
           edges: (remainingProps.edges || []).map(
-            ({ selected, className, ...rest }) => rest
+            ({ selected, ...rest }) => rest
           ),
         };
       };
@@ -301,16 +299,12 @@ const GraphFlowContent: React.FC = () => {
   useEffect(() => {
     if (isSettling || !lastSavedWorkflowRef.current) return;
 
-    const timer = setTimeout(() => {
-      const currentWorkflowState = { ...workflow, nodes, edges } as Workflow;
-      const hasChanged = compareWorkflows(
-        lastSavedWorkflowRef.current,
-        currentWorkflowState
-      );
-      setHasUnsavedChanges(hasChanged);
-    }, 300);
-
-    return () => clearTimeout(timer);
+    const currentWorkflowState = { ...workflow, nodes, edges } as Workflow;
+    const hasChanged = compareWorkflows(
+      lastSavedWorkflowRef.current,
+      currentWorkflowState
+    );
+    setHasUnsavedChanges(hasChanged);
   }, [nodes, edges, workflow, isSettling, compareWorkflows]);
 
   // Clipboard for node copy/paste (supports multi-node + edges)
@@ -570,28 +564,32 @@ const GraphFlowContent: React.FC = () => {
     setTestDialogOpen(true);
   };
 
-  // Handle selection change — highlight edges connected to any selected node.
-  // Only edges whose className actually toggles get a new object reference; the
-  // rest keep their identity so they don't re-render, and if nothing changed we
-  // return the same array so React bails out of the state update entirely.
+  // Handle selection change
   const onSelectionChange = useCallback(({ nodes: selNodes }) => {
     setSelectedNodes(selNodes || []);
 
-    const selectedIds = new Set((selNodes || []).map((n: Node) => n.id));
-    setEdges((eds) => {
-      let changed = false;
-      const next = eds.map((edge) => {
-        const isConnected =
-          selectedIds.size >= 1 &&
-          (selectedIds.has(edge.source) || selectedIds.has(edge.target));
-        const nextClassName = isConnected ? 'animated-edge' : '';
-        // Treat undefined/'' as equivalent so untouched edges keep their reference.
-        if ((edge.className || '') === nextClassName) return edge;
-        changed = true;
-        return { ...edge, className: nextClassName };
-      });
-      return changed ? next : eds;
-    });
+    if (selNodes && selNodes.length >= 1) {
+      // Add animated-edge class to edges connected to any selected node
+      const selectedIds = new Set(selNodes.map((n: Node) => n.id));
+      setEdges((eds) =>
+        eds.map((edge) => {
+          const isConnected =
+            selectedIds.has(edge.source) || selectedIds.has(edge.target);
+          return {
+            ...edge,
+            className: isConnected ? 'animated-edge' : '',
+          };
+        })
+      );
+    } else {
+      // Remove animated-edge class from all edges
+      setEdges((eds) =>
+        eds.map((edge) => ({
+          ...edge,
+          className: '',
+        }))
+      );
+    }
   }, [setEdges]);
 
   // Take snapshot when nodes or edges change (for undo/redo)
@@ -970,13 +968,6 @@ const GraphFlowContent: React.FC = () => {
     if (nodeSearchOpen) closeNodeSearch();
   }, [nodeSearchOpen, closeNodeSearch]);
 
-  // Single memoized "current workflow" (metadata + live nodes/edges) shared by the
-  // panels, instead of building a fresh object inline for each of them every render.
-  const currentWorkflow = useMemo(
-    () => ({ ...workflow, nodes, edges }),
-    [workflow, nodes, edges]
-  );
-
   return (
     <WorkflowProvider workflow={workflow} setWorkflow={setWorkflow}>
       <WorkflowExecutionProvider>
@@ -1017,8 +1008,7 @@ const GraphFlowContent: React.FC = () => {
                   nodesDraggable={nodesDraggable}
                   nodesConnectable={nodesConnectable}
                   elementsSelectable={elementsSelectable}
-                  proOptions={PRO_OPTIONS}
-                  onlyRenderVisibleElements
+                  proOptions={{ hideAttribution: true }} // remove React Flow watermark
                 >
                   <Background />
                   <CustomControls
@@ -1053,7 +1043,11 @@ const GraphFlowContent: React.FC = () => {
               }`}
             >
               <BottomPanel
-                workflow={currentWorkflow}
+                workflow={{
+                  ...workflow,
+                  nodes: nodes,
+                  edges: edges,
+                }}
                 hasUnsavedChanges={hasUnsavedChanges}
                 onWorkflowLoaded={(workflow) => handleWorkflowLoaded(workflow, true)}
                 onTestWorkflow={handleTestGraph}
@@ -1093,7 +1087,11 @@ const GraphFlowContent: React.FC = () => {
               onClose={toggleWorkflowPanel}
               agentId={agentId}
               activeWorkflowId={agent?.workflow_id}
-              currentWorkflow={currentWorkflow}
+              currentWorkflow={{
+                ...workflow,
+                nodes: nodes,
+                edges: edges,
+              }}
               onWorkflowSelect={handleWorkflowLoaded}
               onActiveWorkflowChange={handleActiveWorkflowChange}
               refreshKey={refreshKey}
@@ -1147,11 +1145,12 @@ const GraphFlowContent: React.FC = () => {
 
 export default GraphFlowContent;
 
-// GraphFlowContent already wraps its subtree in a WorkflowExecutionProvider,
-// and all consumers (nodes, panels, dialogs) live inside that subtree — so this
-// wrapper does not add a second provider (which would be a redundant, unused instance).
 const GraphFlow: React.FC = () => {
-  return <GraphFlowContent />;
+  return (
+    <WorkflowExecutionProvider>
+      <GraphFlowContent />
+    </WorkflowExecutionProvider>
+  );
 };
 
 export { GraphFlow };

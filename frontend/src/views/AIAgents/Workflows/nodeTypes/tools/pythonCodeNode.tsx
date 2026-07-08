@@ -79,4 +79,4 @@ const PythonCodeNode: React.FC<NodeProps<PythonCodeNodeData>> = ({
   );
 };
 
-export default React.memo(PythonCodeNode);
+export default PythonCodeNode;

@@ -67,4 +67,4 @@ const APIToolNode: React.FC<NodeProps<APIToolNodeData>> = ({
   );
 };
 
-export default React.memo(APIToolNode);
+export default APIToolNode;

@@ -120,4 +120,4 @@ const TrainDataSourceNode: React.FC<NodeProps<TrainDataSourceNodeData>> = ({
   );
 };
 
-export default React.memo(TrainDataSourceNode);
+export default TrainDataSourceNode;

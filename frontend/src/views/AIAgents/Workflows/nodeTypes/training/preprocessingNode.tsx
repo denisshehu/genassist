@@ -67,4 +67,4 @@ const PreprocessingNode: React.FC<NodeProps<PreprocessingNodeData>> = ({
   );
 };
 
-export default React.memo(PreprocessingNode);
+export default PreprocessingNode;
